@@ -19,7 +19,7 @@ export async function loginIsNeedCaptcha(
   body: API.LoginIsNeedCaptchaReq,
   options?: { [key: string]: any },
 ) {
-  return request<API.ApiResboolean>('/api/v1/user/account/loginIsNeedCaptcha.json', {
+  return request<Record<string,any>>('/api/v1/user/account/loginIsNeedCaptcha.json', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
