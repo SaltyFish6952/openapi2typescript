@@ -2,7 +2,7 @@ import typescript, { forEachChild } from 'typescript';
 import fs from 'fs';
 import path from 'path';
 
-import { Project, Node, TypeReferenceNode } from 'ts-morph';
+import { Project, Node, TypeReferenceNode, SourceFile } from 'ts-morph';
 import { SyntaxKind } from '@ts-morph/common';
 
 export function traverseGetNodesByType(
@@ -20,8 +20,8 @@ export function traverseGetNodesByType(
   // });
 }
 
-export function getTypesFromDeclare(p) {
-  const absPath = path.resolve(__dirname, p);
+export function getTypesFromDeclare(source: SourceFile) {
+  // const absPath = path.resolve(__dirname, p);
 
   // const sourceFile = typescript.createSourceFile(
   //   absPath,
@@ -35,9 +35,9 @@ export function getTypesFromDeclare(p) {
   //   typeNames.push(node.name.getText());
   // });
 
-  const project = new Project();
+  // const project = new Project();
 
-  const source = project.addSourceFileAtPath(absPath);
+  // const source = project.addSourceFileAtPath(absPath);
 
   let count = 0;
 
@@ -46,6 +46,47 @@ export function getTypesFromDeclare(p) {
 
     if (Node.isQualifiedName(qn)) {
       debugger;
+      return qn.getRight().getText();
+    } else {
+      return undefined;
+    }
+  };
+
+  const typeNames = source
+    .getModules()
+    .map((md) => md.getTypeAliases().map((ta) => ta.getName()))
+    .flat();
+
+  console.log(typeNames);
+  debugger;
+
+  return typeNames;
+}
+
+export function getTypesFormController(source: SourceFile) {
+  // const absPath = path.resolve(__dirname, p);
+  // // const sourceFile = typescript.createSourceFile(
+  // //   absPath,
+  // //   fs.readFileSync(absPath).toString(),
+  // //   typescript.ScriptTarget.ES2015,
+  // //   true,
+  // // );
+  // // const typeNames: string[] = [];
+  // // traverseGetNodesByType(sourceFile, isTypeReferenceNode, (node: TypeReferenceNode) => {
+  // //   typeNames.push((node.typeName as QualifiedName).right.getText());
+  // // });
+  // // debugger;
+  // // return [...new Set(typeNames)];
+
+  // const project = new Project();
+  // const source = project.addSourceFileAtPath(absPath);
+
+  // let count = 0;
+
+  const getTypeReferenceName = (typeReference: TypeReferenceNode) => {
+    const qn = typeReference.getFirstChildIfKind(SyntaxKind.QualifiedName);
+
+    if (Node.isQualifiedName(qn)) {
       return qn.getRight().getText();
     } else {
       return undefined;
@@ -77,25 +118,45 @@ export function getTypesFromDeclare(p) {
   console.log(typeNames);
   debugger;
 
-  return typeNames;
+  return typeNames.filter((x) => !!x);
 }
 
-export function getTypesFormController(p) {
-  // const absPath = path.resolve(__dirname, p);
-  // const sourceFile = typescript.createSourceFile(
-  //   absPath,
-  //   fs.readFileSync(absPath).toString(),
-  //   typescript.ScriptTarget.ES2015,
-  //   true,
-  // );
-  // const typeNames: string[] = [];
-  // traverseGetNodesByType(sourceFile, isTypeReferenceNode, (node: TypeReferenceNode) => {
-  //   typeNames.push((node.typeName as QualifiedName).right.getText());
-  // });
-  // debugger;
-  // return [...new Set(typeNames)];
+export function getControllerTypesDep(controllerSource: SourceFile, typeSource: SourceFile) {
+  const controllerTypes = getTypesFormController(controllerSource);
+
+  const module = typeSource
+    .getChildAtIndexIfKind(0, SyntaxKind.SyntaxList)
+    .getChildAtIndexIfKind(0, SyntaxKind.ModuleDeclaration);
+
+  const depTypes: string[] = [...controllerTypes];
+  const getTypeReferenceDeps = (typeName: string) => {
+    const ta = module.getTypeAlias(typeName);
+
+    try {
+      const typeReferences = ta
+        .getChildAtIndexIfKind(3, SyntaxKind.TypeLiteral)
+        .getChildAtIndexIfKind(1, SyntaxKind.SyntaxList)
+        .getChildrenOfKind(SyntaxKind.PropertySignature)
+        .map((ps) => ps.getChildrenOfKind(SyntaxKind.TypeReference).map((tr) => tr.getText()))
+        .flat();
+
+      const nonInDepTypes = typeReferences.filter((tr) => !depTypes.includes(tr));
+
+      depTypes.push(...nonInDepTypes);
+
+      nonInDepTypes.forEach((trName) => getTypeReferenceDeps(trName));
+    } catch {}
+  };
+
+  controllerTypes.forEach((typeName) => getTypeReferenceDeps(typeName));
+
+  return [...new Set(depTypes)];
 }
 
-// const a = getTypesFromDeclare('./typings.d.ts');
-const a = getTypesFromDeclare('./UserAccount.ts');
+const controllerProject = new Project().addSourceFileAtPath('./UserAccount.ts');
+const typeProject = new Project().addSourceFileAtPath('./typings.d.ts');
+
+// const a = getTypesFromDeclare(typeProject);
+// const b = getTypesFormController(controllerProject);
+const c = getControllerTypesDep(controllerProject, typeProject);
 debugger;

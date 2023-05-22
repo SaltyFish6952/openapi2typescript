@@ -1,15 +1,15 @@
 declare namespace API {
   type AccountLoginReq = {
     /** 验证码 */
-    captcha?: string;
+    captcha?: TokenDTO;
     /** 验证码ID */
     captchaId?: number;
     /** 验证令牌 */
-    captchaToken?: string;
+    captchaToken?: CaptchaTokenVO;
     /** 密码(客户端使用 “墙]・▽・)ノ 嗨,美女+密码” 的MD5值提交，32位小写) */
     password: string;
     /** 用户名 */
-    username: string;
+    username: AccountRegisterReq;
   };
 
   type AccountRegisterReq = {
@@ -33,7 +33,7 @@ declare namespace API {
     /** 相应数据 */
     data?: boolean;
     /** 提示消息 */
-    msg: string;
+    msg: ApiReq;
     /** 消息提示方式 */
     showType:
       | 'DIALOG'
@@ -75,7 +75,7 @@ declare namespace API {
     /** 相应数据 */
     data?: ImgCaptchaDTO;
     /** 提示消息 */
-    msg: string;
+    msg: CheckImgCaptchaReq;
     /** 消息提示方式 */
     showType:
       | 'DIALOG'
