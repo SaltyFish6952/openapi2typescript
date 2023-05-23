@@ -2,7 +2,7 @@ import typescript, { forEachChild } from 'typescript';
 import fs from 'fs';
 import path from 'path';
 
-import { Project, Node, TypeReferenceNode, SourceFile } from 'ts-morph';
+import { Project, Node, TypeReferenceNode, SourceFile, QualifiedName } from 'ts-morph';
 import { SyntaxKind } from '@ts-morph/common';
 
 export function traverseGetNodesByType(
@@ -84,7 +84,12 @@ export function getTypesFormController(source: SourceFile) {
   // let count = 0;
 
   const getTypeReferenceName = (typeReference: TypeReferenceNode) => {
-    const qn = typeReference.getFirstChildIfKind(SyntaxKind.QualifiedName);
+    let qn: QualifiedName;
+    try {
+      qn = typeReference.getFirstChildIfKind(SyntaxKind.QualifiedName);
+    } catch {
+      return undefined;
+    }
 
     if (Node.isQualifiedName(qn)) {
       return qn.getRight().getText();
@@ -101,11 +106,13 @@ export function getTypesFormController(source: SourceFile) {
         .map((param) => param.getChildrenOfKind(SyntaxKind.TypeReference).map(getTypeReferenceName))
         .flat(2);
 
-      const callTypeReference = funcNode
-        .getStatementByKind(SyntaxKind.ReturnStatement)
-        .getChildAtIndexIfKindOrThrow(1, SyntaxKind.CallExpression)
-        .getFirstChildByKindOrThrow(SyntaxKind.TypeReference);
-
+      let callTypeReference: TypeReferenceNode;
+      try {
+        callTypeReference = funcNode
+          .getStatementByKind(SyntaxKind.ReturnStatement)
+          .getChildAtIndexIfKindOrThrow(1, SyntaxKind.CallExpression)
+          .getFirstChildByKindOrThrow(SyntaxKind.TypeReference);
+      } catch {}
       const callTypeName = getTypeReferenceName(callTypeReference);
       // .getChildrenOfKind(SyntaxKind.CallExpression)
       // .map((call) =>
@@ -118,15 +125,13 @@ export function getTypesFormController(source: SourceFile) {
   console.log(typeNames);
   debugger;
 
-  return typeNames.filter((x) => !!x);
+  return [...new Set(typeNames.filter((x) => !!x))];
 }
 
 export function getControllerTypesDep(controllerSource: SourceFile, typeSource: SourceFile) {
   const controllerTypes = getTypesFormController(controllerSource);
 
-  const module = typeSource
-    .getChildAtIndexIfKind(0, SyntaxKind.SyntaxList)
-    .getChildAtIndexIfKind(0, SyntaxKind.ModuleDeclaration);
+  const module = typeSource.getStatementByKind(SyntaxKind.ModuleDeclaration);
 
   const depTypes: string[] = [...controllerTypes];
   const getTypeReferenceDeps = (typeName: string) => {
@@ -137,7 +142,13 @@ export function getControllerTypesDep(controllerSource: SourceFile, typeSource: 
         .getChildAtIndexIfKind(3, SyntaxKind.TypeLiteral)
         .getChildAtIndexIfKind(1, SyntaxKind.SyntaxList)
         .getChildrenOfKind(SyntaxKind.PropertySignature)
-        .map((ps) => ps.getChildrenOfKind(SyntaxKind.TypeReference).map((tr) => tr.getText()))
+        .map((ps) => [
+          ...ps.getChildrenOfKind(SyntaxKind.TypeReference).map((tr) => tr.getText()),
+          ...ps
+            .getChildrenOfKind(SyntaxKind.ArrayType)
+            .map((at) => at.getChildrenOfKind(SyntaxKind.TypeReference).map((tr) => tr.getText()))
+            .flat(),
+        ])
         .flat();
 
       const nonInDepTypes = typeReferences.filter((tr) => !depTypes.includes(tr));
