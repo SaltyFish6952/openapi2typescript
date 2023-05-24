@@ -103,16 +103,31 @@ export function getTypesFormController(source: SourceFile) {
     .map((funcNode) => {
       const paramsTypeReference = funcNode
         .getParameters()
-        .map((param) => param.getChildrenOfKind(SyntaxKind.TypeReference).map(getTypeReferenceName))
+        .map((param) => {
+          return [
+            ...param.getChildrenOfKind(SyntaxKind.TypeReference).map(getTypeReferenceName),
+            ...param
+              .getChildrenOfKind(SyntaxKind.ArrayType)
+              .map((at) => at.getChildrenOfKind(SyntaxKind.TypeReference).map(getTypeReferenceName))
+              .flat(),
+          ];
+        })
         .flat(2);
-
       let callTypeReference: TypeReferenceNode;
       try {
         callTypeReference = funcNode
           .getStatementByKind(SyntaxKind.ReturnStatement)
           .getChildAtIndexIfKindOrThrow(1, SyntaxKind.CallExpression)
           .getFirstChildByKindOrThrow(SyntaxKind.TypeReference);
-      } catch {}
+      } catch {
+        try {
+          callTypeReference = funcNode
+            .getStatementByKind(SyntaxKind.ReturnStatement)
+            .getFirstChildByKindOrThrow(SyntaxKind.CallExpression)
+            .getFirstChildByKindOrThrow(SyntaxKind.ArrayType)
+            .getFirstChildByKindOrThrow(SyntaxKind.TypeReference);
+        } catch {}
+      }
       const callTypeName = getTypeReferenceName(callTypeReference);
       // .getChildrenOfKind(SyntaxKind.CallExpression)
       // .map((call) =>
@@ -123,8 +138,6 @@ export function getTypesFormController(source: SourceFile) {
     })
     .flat();
   console.log(typeNames);
-  debugger;
-
   return [...new Set(typeNames.filter((x) => !!x))];
 }
 
