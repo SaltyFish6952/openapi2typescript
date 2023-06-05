@@ -1,0 +1,1 @@
+export const excludeBuiltInTypes: (string | RegExp)[] = [/^Record(<.*,.*>)*$/g];
