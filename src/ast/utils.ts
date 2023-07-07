@@ -183,4 +183,3 @@ const typeProject = new Project().addSourceFileAtPath('./typings.d.ts');
 // const a = getTypesFromDeclare(typeProject);
 // const b = getTypesFormController(controllerProject);
 const c = getControllerTypesDep(controllerProject, typeProject);
-debugger;

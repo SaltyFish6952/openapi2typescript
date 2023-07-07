@@ -78,6 +78,11 @@ export type GenerateServiceProps = {
    * example: ['result', 'res']
    */
   dataFields?: string[];
+
+  /** 
+   * 增量controller
+   */
+  incrementControllers?: string[];
 };
 
 const converterSwaggerToOpenApi = (swagger: any) => {
