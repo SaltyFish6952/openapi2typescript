@@ -185,6 +185,15 @@ export function resolveControllerNames(indexSource: SourceFile) {
   });
 }
 
+
+export function addBlankLineForNodes(parentNode: Node) {
+  const nodes = parentNode.forEachChildAsArray();
+
+  nodes.forEach((node) => {
+    node.appendWhitespace((writer) => writer.newLine());
+  });
+}
+
 // const controllerProject = new Project().addSourceFileAtPath('./UserAccount.ts');
 // const typeProject = new Project().addSourceFileAtPath('./typings.d.ts');
 

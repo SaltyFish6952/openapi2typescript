@@ -7,9 +7,9 @@ import {
   TypeAliasDeclarationStructure,
 } from 'ts-morph';
 import { INCREMENT_TEMP_DIR_NAME } from './constant';
-import { getControllerTypesDep, resolveControllerNames } from './utils';
+import { addBlankLineForNodes, getControllerTypesDep, resolveControllerNames } from './utils';
 import { SyntaxKind } from 'ts-morph';
-import {errors} from '@ts-morph/common'
+import { errors } from '@ts-morph/common';
 import { xor } from 'lodash';
 
 export class IncrementGenerator {
@@ -49,19 +49,19 @@ export class IncrementGenerator {
     // TODO read old type strcture,
     // filter new type in new types,
     // replace old type with new type.
-    let oldTypeSourceFile;
+    let oldTypeSourceFile: SourceFile;
 
     try {
       oldTypeSourceFile = new Project().addSourceFileAtPath(oldTypeFilePath);
     } catch (e) {
       if (e instanceof errors.FileNotFoundError) {
-        return this.typeSourceFile.getFullText();
+        // return this.typeSourceFile.getFullText();
       } else {
         console.error((e as Error).message);
       }
     }
-    
-    const oldTypeModuleDeclaration = oldTypeSourceFile.getStatementByKind(
+
+    const oldTypeModuleDeclaration = oldTypeSourceFile?.getStatementByKind?.(
       SyntaxKind.ModuleDeclaration,
     );
 
@@ -77,19 +77,41 @@ export class IncrementGenerator {
     ).filter((x) => this.dependTypes.includes(x.name));
 
     const newStatements = (
-      oldTypeModuleDeclaration.getStructure().statements as TypeAliasDeclarationStructure[]
+      (oldTypeModuleDeclaration?.getStructure?.()?.statements ??
+        []) as TypeAliasDeclarationStructure[]
     )?.filter((x) => !this.dependTypes.includes(x.name));
 
     newStatements.push(...incrementStatements);
 
     newStatements.sort((a, b) => a.name.localeCompare(b.name));
+    
+    if (oldTypeModuleDeclaration) {
+      oldTypeModuleDeclaration.set({
+        ...oldTypeModuleDeclaration.getStructure(),
+        statements: newStatements,
+      });
 
-    oldTypeModuleDeclaration.set({
-      ...oldTypeModuleDeclaration.getStructure(),
-      statements: newStatements,
-    });
+      addBlankLineForNodes(oldTypeModuleDeclaration.getFirstChildByKind(SyntaxKind.ModuleBlock))
 
-    return oldTypeSourceFile.getFullText();
+      const text = oldTypeSourceFile.getFullText();
+
+      return text;
+    } else {
+      const newTypeModuleDeclaration = this.typeSourceFile.getStatementByKind?.(
+        SyntaxKind.ModuleDeclaration,
+      );
+
+      newTypeModuleDeclaration.set({
+        ...newTypeModuleDeclaration.getStructure(),
+        statements: newStatements,
+      });
+
+      addBlankLineForNodes(newTypeModuleDeclaration.getFirstChildByKind(SyntaxKind.ModuleBlock));
+      
+      const text = this.typeSourceFile.getFullText();
+
+      return text;
+    }
   }
 
   public genServiceIndexIncrement(
@@ -99,7 +121,6 @@ export class IncrementGenerator {
       controllerName: string;
     }[],
   ) {
-
     let oldIndexSourceFile;
 
     try {
@@ -121,7 +142,7 @@ export class IncrementGenerator {
       newControllers,
     ).filter((x) => !newControllers.includes(x));
 
-    return oldControllers
+    return newControllerClassList
       .concat(
         diffControllers.map((name) => ({
           fileName: name,
@@ -146,8 +167,6 @@ function genServiceControllerTypingsIncrement(
    * 5. 增量更新index.ts
    */
 }
-
-
 
 // const a = new IncrementGenerator(
 //   __dirname,

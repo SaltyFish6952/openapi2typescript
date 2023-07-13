@@ -316,10 +316,6 @@ class ServiceGenerator {
   public genFile() {
     const basePath = this.config.serversPath || './src/service';
 
-    let isOldFileExist =
-      existsSync(join(this.finalPath, 'typings.d.ts')) &&
-      existsSync(join(this.finalPath, 'index.ts'));
-
     let isIncrementController = this.config.incrementControllers?.length > 0;
     let incrementService: IncrementGenerator;
     const relatedTypes: string[] = [];
@@ -329,17 +325,21 @@ class ServiceGenerator {
 
       this.finalPath = finalPath;
 
-      if (!isOldFileExist) {
-        Log(`⛔ 未找到旧类型定义，将全量覆盖`);
-      }
-
-      if (isIncrementController) {
+      if (!isIncrementController) {
         glob
           .sync(`${finalPath}/**/*`)
           .filter((ele) => !ele.includes('_deperated'))
           .forEach((ele) => {
             rimraf.sync(ele);
           });
+      } else {
+        const isOldFileExist =
+          existsSync(join(this.finalPath, 'typings.d.ts')) &&
+          existsSync(join(this.finalPath, 'index.ts'));
+
+        if (!isOldFileExist) {
+          Log(`🛑 未找到旧类型定义`);
+        }
       }
     } catch (error) {
       Log(`🚥 serves 生成失败: ${error}`);
@@ -392,11 +392,11 @@ class ServiceGenerator {
     // TODO  increment index
     if (isIncrementController) {
       // gen types
-      const typeFileOutput = incrementService.genIncrementTypes(
+      const incrementTypeFileOutput = incrementService.genIncrementTypes(
         path.resolve(this.finalPath, 'typings.d.ts'),
       );
 
-      writeFile(this.finalPath, 'typings.d.ts', typeFileOutput);
+      writeFile(this.finalPath, 'typings.d.ts', incrementTypeFileOutput);
 
       // gen index
       const incrementClassNameList = incrementService.genServiceIndexIncrement(
@@ -412,10 +412,13 @@ class ServiceGenerator {
       writeFile(this.finalPath, `index.ts`, indexFileOutput);
     } else {
       // 生成 index 文件
-      this.genFileFromTemplate(`index.ts`, 'serviceIndex', {
+      const output = this.genFileFromTemplate(`index.ts`, 'serviceIndex', {
         list: this.classNameList,
         disableTypeCheck: false,
       });
+
+      writeFile(this.finalPath, `index.ts`, output);
+
     }
 
     // 打印日志
