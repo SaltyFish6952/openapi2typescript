@@ -45,7 +45,7 @@ export function getTypesFromDeclare(source: SourceFile) {
     const qn = typeReference.getFirstChildIfKind(SyntaxKind.QualifiedName);
 
     if (Node.isQualifiedName(qn)) {
-      debugger;
+      // debugger;
       return qn.getRight().getText();
     } else {
       return undefined;
@@ -57,8 +57,6 @@ export function getTypesFromDeclare(source: SourceFile) {
     .map((md) => md.getTypeAliases().map((ta) => ta.getName()))
     .flat();
 
-  console.log(typeNames);
-  debugger;
 
   return typeNames;
 }
@@ -137,7 +135,7 @@ export function getTypesFormController(source: SourceFile) {
       return [...paramsTypeReference, callTypeName];
     })
     .flat();
-  console.log(typeNames);
+
   return [...new Set(typeNames.filter((x) => !!x))];
 }
 
@@ -177,9 +175,22 @@ export function getControllerTypesDep(controllerSource: SourceFile, typeSource: 
   return [...new Set(depTypes)];
 }
 
-const controllerProject = new Project().addSourceFileAtPath('./UserAccount.ts');
-const typeProject = new Project().addSourceFileAtPath('./typings.d.ts');
+export function resolveControllerNames(indexSource: SourceFile) {
+  return indexSource.getImportDeclarations().map((id) => {
+    const name = id.getNamespaceImport().getText();
+    return {
+      fileName: name,
+      controllerName: name,
+    };
+  });
+}
+
+// const controllerProject = new Project().addSourceFileAtPath('./UserAccount.ts');
+// const typeProject = new Project().addSourceFileAtPath('./typings.d.ts');
 
 // const a = getTypesFromDeclare(typeProject);
 // const b = getTypesFormController(controllerProject);
-const c = getControllerTypesDep(controllerProject, typeProject);
+// const c = getControllerTypesDep(controllerProject, typeProject);
+
+// const v = resolveControllerNames(new Project().addSourceFileAtPath('./iii.ts'));
+// console.log(v);

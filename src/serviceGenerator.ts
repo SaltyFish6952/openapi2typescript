@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'fs';
+import { existsSync,  readFileSync } from 'fs';
 import glob from 'glob';
 import * as nunjucks from 'nunjucks';
 import type {
@@ -310,7 +310,8 @@ class ServiceGenerator {
   public genFile() {
     const basePath = this.config.serversPath || './src/service';
 
-    const isIncrementController = this.config.incrementControllers?.length > 0;
+    let isOldFileExist = true
+    let isIncrementController = this.config.incrementControllers?.length > 0;
     let incrementService: IncrementGenerator;
     const relatedTypes: string[] = [];
 
@@ -318,6 +319,13 @@ class ServiceGenerator {
       const finalPath = join(basePath, this.config.projectName);
 
       this.finalPath = finalPath;
+
+      
+      // isOldFileExist =
+      //   existsSync(join(this.finalPath, 'typings.d.ts')) &&
+      //   existsSync(join(this.finalPath, 'index.ts'));
+
+      // isIncrementController = isIncrementController && isOldFileExist;
 
       if (isIncrementController) {
         glob
@@ -375,16 +383,33 @@ class ServiceGenerator {
       Log(`🚥 格式化失败，请检查 service 文件内可能存在的语法错误`);
     }
 
-    // 生成 index 文件
-    this.genFileFromTemplate(`index.ts`, 'serviceIndex', {
-      list: this.classNameList,
-      disableTypeCheck: false,
-    });
-
     // TODO  increment index
     if (isIncrementController) {
       // gen types
-      incrementService.genIncrementTypes(path.resolve(this.finalPath, 'typings.d.ts'));
+      const typeFileOutput = incrementService.genIncrementTypes(
+        path.resolve(this.finalPath, 'typings.d.ts'),
+      );
+
+      writeFile(this.finalPath, 'typings.d.ts', typeFileOutput);
+
+      // gen index
+      const incrementClassNameList = incrementService.genServiceIndexIncrement(
+        `index.ts`,
+        this.classNameList,
+      );
+
+      const indexFileOutput = this.genFileFromTemplate(`index.ts`, 'serviceIndex', {
+        list: incrementClassNameList,
+        disableTypeCheck: false,
+      });
+
+      writeFile(this.finalPath, `index.ts`, indexFileOutput);
+    } else {
+      // 生成 index 文件
+      this.genFileFromTemplate(`index.ts`, 'serviceIndex', {
+        list: this.classNameList,
+        disableTypeCheck: false,
+      });
     }
 
     // 打印日志

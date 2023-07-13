@@ -1,8 +1,15 @@
 import path from 'path';
-import { SourceFile, Project, StatementStructures, ModuleDeclarationStructure, TypeAliasDeclarationStructure } from 'ts-morph';
+import {
+  SourceFile,
+  Project,
+  StatementStructures,
+  ModuleDeclarationStructure,
+  TypeAliasDeclarationStructure,
+} from 'ts-morph';
 import { INCREMENT_TEMP_DIR_NAME } from './constant';
-import { getControllerTypesDep } from './utils';
+import { getControllerTypesDep, resolveControllerNames } from './utils';
 import { SyntaxKind } from 'ts-morph';
+import { xor } from 'lodash';
 
 export class IncrementGenerator {
   morphProject: Project;
@@ -37,20 +44,25 @@ export class IncrementGenerator {
     this.dependTypes = [...new Set([...this.dependTypes, ...depends])];
   }
 
-  public genIncrementTypes(oldTypeFilePath:string){
-    // TODO read old type strcture, 
-    // filter new type in new types, 
+  public genIncrementTypes(oldTypeFilePath: string) {
+    // TODO read old type strcture,
+    // filter new type in new types,
     // replace old type with new type.
-    const oldTypeSourceFile = new Project().addSourceFileAtPath(oldTypeFilePath)
-    const oldTypeModuleDeclaration = oldTypeSourceFile.getStatementByKind(SyntaxKind.ModuleDeclaration)
-
-    const newTypeStructure = this.typeSourceFile.getStatementByKind(SyntaxKind.ModuleDeclaration).getStructure()
-
-    this.dependTypes = ['SuperMan']
-
-    const incrementStatements = (newTypeStructure.statements as TypeAliasDeclarationStructure[]).filter(
-      (x) => this.dependTypes.includes(x.name),
+    const oldTypeSourceFile = new Project().addSourceFileAtPath(oldTypeFilePath);
+    const oldTypeModuleDeclaration = oldTypeSourceFile.getStatementByKind(
+      SyntaxKind.ModuleDeclaration,
     );
+
+    const newTypeStructure = this.typeSourceFile
+      .getStatementByKind(SyntaxKind.ModuleDeclaration)
+      .getStructure();
+
+    // TODO
+    this.dependTypes = ['SuperMan'];
+
+    const incrementStatements = (
+      newTypeStructure.statements as TypeAliasDeclarationStructure[]
+    ).filter((x) => this.dependTypes.includes(x.name));
 
     const newStatements = (
       oldTypeModuleDeclaration.getStructure().statements as TypeAliasDeclarationStructure[]
@@ -64,14 +76,37 @@ export class IncrementGenerator {
       ...oldTypeModuleDeclaration.getStructure(),
       statements: newStatements,
     });
-    
-    oldTypeSourceFile.saveSync()
 
+    return oldTypeSourceFile.getFullText();
+  }
 
+  public genServiceIndexIncrement(
+    fileName: string,
+    newControllerClassList: {
+      fileName: string;
+      controllerName: string;
+    }[],
+  ) {
+    const oldIndexSourceFile = new Project().addSourceFileAtPath(this.getFileName(fileName));
+    const oldControllers = resolveControllerNames(oldIndexSourceFile) ?? [];
+
+    const newControllers = newControllerClassList.map((x) => x.fileName) ?? [];
+
+    const diffControllers = xor(
+      oldControllers.map((x) => x.fileName),
+      newControllers,
+    ).filter((x) => !newControllers.includes(x));
+
+    return oldControllers
+      .concat(
+        diffControllers.map((name) => ({
+          fileName: name,
+          controllerName: name,
+        })),
+      )
+      .sort((a, b) => a.fileName.localeCompare(b.fileName));
   }
 }
-
-function genServiceIndexIncrement(path: string, newFullText: string) {}
 
 function genServiceControllerTypingsIncrement(
   controllerPath: string,
@@ -88,77 +123,77 @@ function genServiceControllerTypingsIncrement(
    */
 }
 
-function getTypeRelateByServiceController(
-  path: string,
-  newControllerFullText: string,
-  newTypeFullText: string,
-) {}
 
 
-const a = new IncrementGenerator(__dirname,`
-// @ts-ignore
-/* eslint-disable */
+// const a = new IncrementGenerator(
+//   __dirname,
+//   `
+// // @ts-ignore
+// /* eslint-disable */
 
-declare namespace API {
-  type AdjustOrderChangeWarehouseCmd = {
-    /** 调整单主键id */
-    adjustOrderId?: string;
-    /** 库存地id */
-    warehouseDistrictId?: string;
-    /** 仓库id */
-    warehouseId?: string;
-  };
+// declare namespace API {
+//   type AdjustOrderChangeWarehouseCmd = {
+//     /** 调整单主键id */
+//     adjustOrderId?: string;
+//     /** 库存地id */
+//     warehouseDistrictId?: string;
+//     /** 仓库id */
+//     warehouseId?: string;
+//   };
 
-  type AdjustOrderCreateCmd = {
-    /** 调整类型 */
-    adjustTypeCode?: string;
-    /** 库存表id(列表) */
-    inventoryIds?: number[];
-  };
+//   type AdjustOrderCreateCmd = {
+//     /** 调整类型 */
+//     adjustTypeCode?: string;
+//     /** 库存表id(列表) */
+//     inventoryIds?: number[];
+//   };
 
-  type AdjustOrderDTO = {
-    /** 调整单号 */
-    adjustOrderCode?: string;
-    /** 调整单主键id */
-    adjustOrderId?: string;
-    /** 调整原因 */
-    adjustReason?: string;
-    /** 调整类型(数据字典) */
-    adjustTypeCode?: string;
-    /** 调整类型名称 */
-    adjustTypeName?: string;
-    /** 创建人 */
-    createBy?: string;
-    /** 创建人(名称) */
-    createByName?: string;
-    /** 创建时间 */
-    createTime?: string;
-    /** 修改人 */
-    modifyBy?: string;
-    /** 修改人(名称) */
-    modifyByName?: string;
-    /** 修改时间 */
-    modifyTime?: string;
-    /** 状态 */
-    statusCode?: string;
-    /** 状态名称 */
-    statusName?: string;
-    /** 提交时间 */
-    submitTime?: string;
-    /** 库存地编码 */
-    warehouseDistrictCode?: string;
-    /** 仓库id */
-    warehouseDistrictId?: string;
-    /** 库存地名称 */
-    warehouseDistrictName?: string;
-    /** 仓库id */
-    warehouseId?: string;
-  };
+//   type AdjustOrderDTO = {
+//     /** 调整单号 */
+//     adjustOrderCode?: string;
+//     /** 调整单主键id */
+//     adjustOrderId?: string;
+//     /** 调整原因 */
+//     adjustReason?: string;
+//     /** 调整类型(数据字典) */
+//     adjustTypeCode?: string;
+//     /** 调整类型名称 */
+//     adjustTypeName?: string;
+//     /** 创建人 */
+//     createBy?: string;
+//     /** 创建人(名称) */
+//     createByName?: string;
+//     /** 创建时间 */
+//     createTime?: string;
+//     /** 修改人 */
+//     modifyBy?: string;
+//     /** 修改人(名称) */
+//     modifyByName?: string;
+//     /** 修改时间 */
+//     modifyTime?: string;
+//     /** 状态 */
+//     statusCode?: string;
+//     /** 状态名称 */
+//     statusName?: string;
+//     /** 提交时间 */
+//     submitTime?: string;
+//     /** 库存地编码 */
+//     warehouseDistrictCode?: string;
+//     /** 仓库id */
+//     warehouseDistrictId?: string;
+//     /** 库存地名称 */
+//     warehouseDistrictName?: string;
+//     /** 仓库id */
+//     warehouseId?: string;
+//   };
 
-  type SuperMan = {
-    haha: string;
-  }
-};
-`)
+//   type SuperMan = {
+//     haha: string;
+//   }
+// };
+// `,
+// );
 
-a.genIncrementTypes(path.resolve('./', 'typings.d.ts'));
+// const res = a.genIncrementTypes(path.resolve('./', 'typings.d.ts'));
+
+// console.log(res);
