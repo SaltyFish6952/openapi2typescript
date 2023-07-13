@@ -21,6 +21,7 @@ import type { GenerateServiceProps } from './index';
 import Log from './log';
 import { stripDot, writeFile } from './util';
 import { IncrementGenerator } from './ast/increment';
+import { pick } from 'lodash';
 
 const BASE_DIRS = ['service', 'services'];
 
@@ -305,12 +306,20 @@ class ServiceGenerator {
         });
       });
     });
+
+    if (this.config.incrementControllers?.length > 0) {
+      const tags = this.config.incrementControllers.map((item) => resolveTypeName(item));
+      this.apiData = pick(this.apiData, tags);
+    }
   }
 
   public genFile() {
     const basePath = this.config.serversPath || './src/service';
 
-    let isOldFileExist = true
+    let isOldFileExist =
+      existsSync(join(this.finalPath, 'typings.d.ts')) &&
+      existsSync(join(this.finalPath, 'index.ts'));
+
     let isIncrementController = this.config.incrementControllers?.length > 0;
     let incrementService: IncrementGenerator;
     const relatedTypes: string[] = [];
@@ -320,12 +329,9 @@ class ServiceGenerator {
 
       this.finalPath = finalPath;
 
-      
-      // isOldFileExist =
-      //   existsSync(join(this.finalPath, 'typings.d.ts')) &&
-      //   existsSync(join(this.finalPath, 'index.ts'));
-
-      // isIncrementController = isIncrementController && isOldFileExist;
+      if (!isOldFileExist) {
+        Log(`⛔ 未找到旧类型定义，将全量覆盖`);
+      }
 
       if (isIncrementController) {
         glob

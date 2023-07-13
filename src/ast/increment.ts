@@ -1,4 +1,4 @@
-import path from 'path';
+import path, { join } from 'path';
 import {
   SourceFile,
   Project,
@@ -9,6 +9,7 @@ import {
 import { INCREMENT_TEMP_DIR_NAME } from './constant';
 import { getControllerTypesDep, resolveControllerNames } from './utils';
 import { SyntaxKind } from 'ts-morph';
+import {errors} from '@ts-morph/common'
 import { xor } from 'lodash';
 
 export class IncrementGenerator {
@@ -48,7 +49,18 @@ export class IncrementGenerator {
     // TODO read old type strcture,
     // filter new type in new types,
     // replace old type with new type.
-    const oldTypeSourceFile = new Project().addSourceFileAtPath(oldTypeFilePath);
+    let oldTypeSourceFile;
+
+    try {
+      oldTypeSourceFile = new Project().addSourceFileAtPath(oldTypeFilePath);
+    } catch (e) {
+      if (e instanceof errors.FileNotFoundError) {
+        return this.typeSourceFile.getFullText();
+      } else {
+        console.error((e as Error).message);
+      }
+    }
+    
     const oldTypeModuleDeclaration = oldTypeSourceFile.getStatementByKind(
       SyntaxKind.ModuleDeclaration,
     );
@@ -57,8 +69,8 @@ export class IncrementGenerator {
       .getStatementByKind(SyntaxKind.ModuleDeclaration)
       .getStructure();
 
-    // TODO
-    this.dependTypes = ['SuperMan'];
+    // // TODO
+    // this.dependTypes = ['SuperMan'];
 
     const incrementStatements = (
       newTypeStructure.statements as TypeAliasDeclarationStructure[]
@@ -87,7 +99,19 @@ export class IncrementGenerator {
       controllerName: string;
     }[],
   ) {
-    const oldIndexSourceFile = new Project().addSourceFileAtPath(this.getFileName(fileName));
+
+    let oldIndexSourceFile;
+
+    try {
+      oldIndexSourceFile = new Project().addSourceFileAtPath(join(this.path, fileName));
+    } catch (e) {
+      if (e instanceof errors.FileNotFoundError) {
+        return newControllerClassList;
+      } else {
+        console.error((e as Error).message);
+      }
+    }
+
     const oldControllers = resolveControllerNames(oldIndexSourceFile) ?? [];
 
     const newControllers = newControllerClassList.map((x) => x.fileName) ?? [];
