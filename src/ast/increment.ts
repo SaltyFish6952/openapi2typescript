@@ -6,11 +6,12 @@ import {
   ModuleDeclarationStructure,
   TypeAliasDeclarationStructure,
 } from 'ts-morph';
+
 import { INCREMENT_TEMP_DIR_NAME } from './constant';
 import { addBlankLineForNodes, getControllerTypesDep, resolveControllerNames } from './utils';
 import { SyntaxKind } from 'ts-morph';
 import { errors } from '@ts-morph/common';
-import { xor } from 'lodash';
+import { cloneDeep, xor } from 'lodash';
 
 export class IncrementGenerator {
   morphProject: Project;
@@ -76,7 +77,7 @@ export class IncrementGenerator {
       newTypeStructure.statements as TypeAliasDeclarationStructure[]
     ).filter((x) => this.dependTypes.includes(x.name));
 
-    const newStatements = (
+    let newStatements = (
       (oldTypeModuleDeclaration?.getStructure?.()?.statements ??
         []) as TypeAliasDeclarationStructure[]
     )?.filter((x) => !this.dependTypes.includes(x.name));
@@ -84,14 +85,21 @@ export class IncrementGenerator {
     newStatements.push(...incrementStatements);
 
     newStatements.sort((a, b) => a.name.localeCompare(b.name));
-    
+
+    newStatements = cloneDeep(newStatements).reduce(
+      (p, c, i) => (i !== newStatements.length - 1 ? [...p, c, '\r\n'] : [...p, c]),
+      [],
+    );
+
     if (oldTypeModuleDeclaration) {
       oldTypeModuleDeclaration.set({
         ...oldTypeModuleDeclaration.getStructure(),
         statements: newStatements,
       });
 
-      addBlankLineForNodes(oldTypeModuleDeclaration.getFirstChildByKind(SyntaxKind.ModuleBlock))
+      oldTypeSourceFile.formatText({
+        convertTabsToSpaces: true,
+      });
 
       const text = oldTypeSourceFile.getFullText();
 
@@ -106,8 +114,10 @@ export class IncrementGenerator {
         statements: newStatements,
       });
 
-      addBlankLineForNodes(newTypeModuleDeclaration.getFirstChildByKind(SyntaxKind.ModuleBlock));
-      
+      this.typeSourceFile.formatText({
+        convertTabsToSpaces: true,
+      });
+
       const text = this.typeSourceFile.getFullText();
 
       return text;
