@@ -2,8 +2,9 @@ import typescript, { forEachChild } from 'typescript';
 import fs from 'fs';
 import path from 'path';
 
-import { Project, Node, TypeReferenceNode, SourceFile, QualifiedName } from 'ts-morph';
+import { Project, Node, TypeReferenceNode, SourceFile, QualifiedName, TypeAliasDeclarationStructure } from 'ts-morph';
 import { SyntaxKind } from '@ts-morph/common';
+import { cloneDeep, find, findIndex, remove } from 'lodash';
 
 export function traverseGetNodesByType(
   pNode: Node,
@@ -175,7 +176,7 @@ export function getControllerTypesDep(controllerSource: SourceFile, typeSource: 
   return [...new Set(depTypes)];
 }
 
-export function resolveControllerNames(indexSource: SourceFile) {
+export function resolveControllerNames(indexSource?: SourceFile) {
   return indexSource.getImportDeclarations().map((id) => {
     const name = id.getNamespaceImport().getText();
     return {
@@ -193,6 +194,58 @@ export function addBlankLineForNodes(parentNode: Node) {
     node.appendWhitespace((writer) => writer.newLine());
   });
 }
+
+
+export function replaceExistStatements(
+  oldStatements: TypeAliasDeclarationStructure[],
+  existStatements: TypeAliasDeclarationStructure[],
+): void {
+
+  let oldIndex = 0
+
+  for (let i = 0; i < existStatements.length; i++) {
+    const oldStatementIndex = findIndex(
+      oldStatements,
+      (item) => item.name === existStatements[i].name,
+      oldIndex,
+    );
+
+    oldStatements[oldStatementIndex].type = existStatements[i].type;
+
+    oldIndex = oldStatementIndex;
+  }
+}
+
+export function mergeStatementBy<T = any>(
+  oldArray: T[],
+  newArray: T[],
+  predicate: (preOldItem: T, curOldItem: T, newItem: T, oldArrayIndex: number) => boolean,
+) {
+  const o = cloneDeep(oldArray);
+  const n = cloneDeep(newArray);
+  for (let i = 0; i < o.length; i++) {
+    for (let j = 0; j < n.length; ) {
+      if (predicate(o[i - 1], o[i], n[j], i)) {
+        o.splice(i, 0, n[j]);
+
+        n.splice(j, 1);
+      } else {
+        j++;
+      }
+    }
+
+    if (n.length === 0) {
+      break;
+    }
+  }
+
+  if (n.length > 0) {
+    return [...o, ...n];
+  } else {
+    return o;
+  }
+}
+
 
 // const controllerProject = new Project().addSourceFileAtPath('./UserAccount.ts');
 // const typeProject = new Project().addSourceFileAtPath('./typings.d.ts');

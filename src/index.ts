@@ -83,6 +83,13 @@ export type GenerateServiceProps = {
    * 增量controller
    */
   incrementControllers?: string[];
+
+  /**
+   * 增量模式
+   * sort:    插入增量type和controller，并重新排序
+   * insert:  插入增量type和controller，仅局部对比排序，不改变其他的原有顺序
+   */
+  incrementMode?: 'sort' | 'insert'
 };
 
 const converterSwaggerToOpenApi = (swagger: any) => {

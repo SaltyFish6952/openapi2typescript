@@ -355,7 +355,7 @@ class ServiceGenerator {
     });
 
     if (isIncrementController) {
-      incrementService = new IncrementGenerator(this.finalPath, typeFileOutput);
+      incrementService = new IncrementGenerator(this.finalPath, typeFileOutput, this.config.incrementMode);
     } else {
       writeFile(this.finalPath, 'typings.d.ts', typeFileOutput);
     }
