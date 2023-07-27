@@ -32,6 +32,7 @@ export const prettierFile = (content: string): [string, boolean] => {
       trailingComma: 'all',
       printWidth: 100,
       parser: 'typescript',
+      tabWidth: 2,
       ...defaultPrettierOptions,
     });
   } catch (error) {

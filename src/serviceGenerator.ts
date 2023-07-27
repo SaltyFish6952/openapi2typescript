@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'fs';
+import { existsSync,  readFileSync } from 'fs';
 import glob from 'glob';
 import * as nunjucks from 'nunjucks';
 import type {
@@ -13,13 +13,15 @@ import type {
   ResponsesObject,
   SchemaObject
 } from 'openapi3-ts';
-import { join } from 'path';
+import path, { join } from 'path';
 import ReservedDict from 'reserved-words';
 import rimraf from 'rimraf';
 import pinyin from 'tiny-pinyin';
 import type { GenerateServiceProps } from './index';
 import Log from './log';
 import { stripDot, writeFile } from './util';
+import { IncrementGenerator } from './ast/increment';
+import { pick } from 'lodash';
 
 const BASE_DIRS = ['service', 'services'];
 
@@ -304,59 +306,120 @@ class ServiceGenerator {
         });
       });
     });
+
+    if (this.config.incrementControllers?.length > 0) {
+      const tags = this.config.incrementControllers.map((item) => resolveTypeName(item));
+      this.apiData = pick(this.apiData, tags);
+    }
   }
 
   public genFile() {
     const basePath = this.config.serversPath || './src/service';
+
+    let isIncrementController = this.config.incrementControllers?.length > 0;
+    let incrementService: IncrementGenerator;
+    const relatedTypes: string[] = [];
+
     try {
       const finalPath = join(basePath, this.config.projectName);
 
       this.finalPath = finalPath;
-      glob
-        .sync(`${finalPath}/**/*`)
-        .filter((ele) => !ele.includes('_deperated'))
-        .forEach((ele) => {
-          rimraf.sync(ele);
-        });
+
+      if (!isIncrementController) {
+        glob
+          .sync(`${finalPath}/**/*`)
+          .filter((ele) => !ele.includes('_deperated'))
+          .forEach((ele) => {
+            rimraf.sync(ele);
+          });
+      } else {
+        const isOldFileExist =
+          existsSync(join(this.finalPath, 'typings.d.ts')) &&
+          existsSync(join(this.finalPath, 'index.ts'));
+
+        if (!isOldFileExist) {
+          Log(`🛑 未找到旧类型定义`);
+        }
+      }
     } catch (error) {
       Log(`🚥 serves 生成失败: ${error}`);
     }
 
     // 生成 ts 类型声明
-    this.genFileFromTemplate('typings.d.ts', 'interface', {
+    const typeFileOutput = this.genFileFromTemplate('typings.d.ts', 'interface', {
       namespace: this.config.namespace,
       nullable: this.config.nullable,
       // namespace: 'API',
       list: this.getInterfaceTP(),
       disableTypeCheck: false,
     });
+
+    if (isIncrementController) {
+      incrementService = new IncrementGenerator(this.finalPath, typeFileOutput, this.config.incrementMode);
+    } else {
+      writeFile(this.finalPath, 'typings.d.ts', typeFileOutput);
+    }
+
     // 生成 controller 文件
     const prettierError = [];
     // 生成 service 统计
     this.getServiceTP().forEach((tp) => {
       // 根据当前数据源类型选择恰当的 controller 模版
       const template = 'serviceController';
-      const hasError = this.genFileFromTemplate(
-        this.getFinalFileName(`${tp.className}.ts`),
-        template,
-        {
-          namespace: this.config.namespace,
-          requestImportStatement: this.config.requestImportStatement,
-          disableTypeCheck: false,
-          ...tp,
-        },
-      );
+      const fileName = this.getFinalFileName(`${tp.className}.ts`);
+
+      const fileOutput = this.genFileFromTemplate(fileName, template, {
+        namespace: this.config.namespace,
+        requestImportStatement: this.config.requestImportStatement,
+        disableTypeCheck: false,
+        ...tp,
+      });
+
+      if (isIncrementController) {
+        // TODO using ts-morph to find types that depended the controllers
+        incrementService.collectDepends(`${tp.className}.ts`, fileOutput);
+      }
+
+      const hasError = writeFile(this.finalPath, fileName, fileOutput);
+
       prettierError.push(hasError);
     });
 
     if (prettierError.includes(true)) {
       Log(`🚥 格式化失败，请检查 service 文件内可能存在的语法错误`);
     }
-    // 生成 index 文件
-    this.genFileFromTemplate(`index.ts`, 'serviceIndex', {
-      list: this.classNameList,
-      disableTypeCheck: false,
-    });
+
+    // TODO  increment index
+    if (isIncrementController) {
+      // gen types
+      const incrementTypeFileOutput = incrementService.genIncrementTypes(
+        path.resolve(this.finalPath, 'typings.d.ts'),
+      );
+
+      writeFile(this.finalPath, 'typings.d.ts', incrementTypeFileOutput);
+
+      // gen index
+      const incrementClassNameList = incrementService.genServiceIndexIncrement(
+        `index.ts`,
+        this.classNameList,
+      );
+
+      const indexFileOutput = this.genFileFromTemplate(`index.ts`, 'serviceIndex', {
+        list: incrementClassNameList,
+        disableTypeCheck: false,
+      });
+
+      writeFile(this.finalPath, `index.ts`, indexFileOutput);
+    } else {
+      // 生成 index 文件
+      const output = this.genFileFromTemplate(`index.ts`, 'serviceIndex', {
+        list: this.classNameList,
+        disableTypeCheck: false,
+      });
+
+      writeFile(this.finalPath, `index.ts`, output);
+
+    }
 
     // 打印日志
     Log(`✅ 成功生成 service 文件`);
@@ -797,14 +860,16 @@ class ServiceGenerator {
     fileName: string,
     type: TypescriptFileType,
     params: Record<string, any>,
-  ): boolean {
+  ): string {
     try {
       const template = this.getTemplate(type);
       // 设置输出不转义
       nunjucks.configure({
         autoescape: false,
       });
-      return writeFile(this.finalPath, fileName, nunjucks.renderString(template, params));
+      // return writeFile(this.finalPath, fileName, nunjucks.renderString(template, params));
+
+      return nunjucks.renderString(template, params)
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[GenSDK] file gen fail:', fileName, 'type:', type);
