@@ -1,11 +1,5 @@
 import path, { join } from 'path';
-import {
-  SourceFile,
-  Project,
-  StatementStructures,
-  ModuleDeclarationStructure,
-  TypeAliasDeclarationStructure,
-} from 'ts-morph';
+import { SourceFile, Project, TypeAliasDeclarationStructure } from 'ts-morph';
 
 import { INCREMENT_TEMP_DIR_NAME } from './constant';
 import {
@@ -130,7 +124,6 @@ export class IncrementGenerator {
         '',
       )}`,
     );
-
 
     // TODO sort insert or find insert
     if (this.incrementMode === 'insert') {
@@ -272,91 +265,3 @@ export class IncrementGenerator {
     }
   }
 }
-
-function genServiceControllerTypingsIncrement(
-  controllerPath: string,
-  typePath: string,
-  newControllerFullText: string,
-  newTypeFullText: string,
-) {
-  /**
-   * 1. 输出新的Controller,
-   * 2. 在新的controller，配合新的type定义，找到该controller依赖的所有types
-   * 3. 全量替换controller, 在旧types的基础上，删除旧依赖的types， 用新依赖types填充
-   * 4. 按字母顺序排序， 输出新types
-   * 5. 增量更新index.ts
-   */
-}
-
-// const a = new IncrementGenerator(
-//   __dirname,
-//   `
-// // @ts-ignore
-// /* eslint-disable */
-
-// declare namespace API {
-//   type AdjustOrderChangeWarehouseCmd = {
-//     /** 调整单主键id */
-//     adjustOrderId?: string;
-//     /** 库存地id */
-//     warehouseDistrictId?: string;
-//     /** 仓库id */
-//     warehouseId?: string;
-//   };
-
-//   type AdjustOrderCreateCmd = {
-//     /** 调整类型 */
-//     adjustTypeCode?: string;
-//     /** 库存表id(列表) */
-//     inventoryIds?: number[];
-//   };
-
-//   type AdjustOrderDTO = {
-//     /** 调整单号 */
-//     adjustOrderCode?: string;
-//     /** 调整单主键id */
-//     adjustOrderId?: string;
-//     /** 调整原因 */
-//     adjustReason?: string;
-//     /** 调整类型(数据字典) */
-//     adjustTypeCode?: string;
-//     /** 调整类型名称 */
-//     adjustTypeName?: string;
-//     /** 创建人 */
-//     createBy?: string;
-//     /** 创建人(名称) */
-//     createByName?: string;
-//     /** 创建时间 */
-//     createTime?: string;
-//     /** 修改人 */
-//     modifyBy?: string;
-//     /** 修改人(名称) */
-//     modifyByName?: string;
-//     /** 修改时间 */
-//     modifyTime?: string;
-//     /** 状态 */
-//     statusCode?: string;
-//     /** 状态名称 */
-//     statusName?: string;
-//     /** 提交时间 */
-//     submitTime?: string;
-//     /** 库存地编码 */
-//     warehouseDistrictCode?: string;
-//     /** 仓库id */
-//     warehouseDistrictId?: string;
-//     /** 库存地名称 */
-//     warehouseDistrictName?: string;
-//     /** 仓库id */
-//     warehouseId?: string;
-//   };
-
-//   type SuperMan = {
-//     haha: string;
-//   }
-// };
-// `,
-// );
-
-// const res = a.genIncrementTypes(path.resolve('./', 'typings.d.ts'));
-
-// console.log(res);

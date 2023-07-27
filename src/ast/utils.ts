@@ -2,46 +2,18 @@ import typescript, { forEachChild } from 'typescript';
 import fs from 'fs';
 import path from 'path';
 
-import { Project, Node, TypeReferenceNode, SourceFile, QualifiedName, TypeAliasDeclarationStructure } from 'ts-morph';
+import {
+  Project,
+  Node,
+  TypeReferenceNode,
+  SourceFile,
+  QualifiedName,
+  TypeAliasDeclarationStructure,
+} from 'ts-morph';
 import { SyntaxKind } from '@ts-morph/common';
 import { cloneDeep, find, findIndex, remove } from 'lodash';
 
-export function traverseGetNodesByType(
-  pNode: Node,
-  type: SyntaxKind | ((n: Node) => boolean),
-  cb: (n: Node) => void,
-) {
-  // forEachChild(pNode, (c: Node) => {
-  //   if (typeof type === 'function') {
-  //     type(c) && cb(c);
-  //   } else {
-  //     c.kind === type && cb(c);
-  //   }
-  //   traverseGetNodesByType(c, type, cb);
-  // });
-}
-
 export function getTypesFromDeclare(source: SourceFile) {
-  // const absPath = path.resolve(__dirname, p);
-
-  // const sourceFile = typescript.createSourceFile(
-  //   absPath,
-  //   fs.readFileSync(absPath).toString(),
-  //   typescript.ScriptTarget.ES2015,
-  //   true,
-  // );
-  // const typeNames: string[] = [];
-
-  // traverseGetNodesByType(sourceFile, isTypeAliasDeclaration, (node: TypeAliasDeclaration) => {
-  //   typeNames.push(node.name.getText());
-  // });
-
-  // const project = new Project();
-
-  // const source = project.addSourceFileAtPath(absPath);
-
-  let count = 0;
-
   const getTypeReferenceName = (typeReference: TypeReferenceNode) => {
     const qn = typeReference.getFirstChildIfKind(SyntaxKind.QualifiedName);
 
@@ -58,30 +30,10 @@ export function getTypesFromDeclare(source: SourceFile) {
     .map((md) => md.getTypeAliases().map((ta) => ta.getName()))
     .flat();
 
-
   return typeNames;
 }
 
 export function getTypesFormController(source: SourceFile) {
-  // const absPath = path.resolve(__dirname, p);
-  // // const sourceFile = typescript.createSourceFile(
-  // //   absPath,
-  // //   fs.readFileSync(absPath).toString(),
-  // //   typescript.ScriptTarget.ES2015,
-  // //   true,
-  // // );
-  // // const typeNames: string[] = [];
-  // // traverseGetNodesByType(sourceFile, isTypeReferenceNode, (node: TypeReferenceNode) => {
-  // //   typeNames.push((node.typeName as QualifiedName).right.getText());
-  // // });
-  // // debugger;
-  // // return [...new Set(typeNames)];
-
-  // const project = new Project();
-  // const source = project.addSourceFileAtPath(absPath);
-
-  // let count = 0;
-
   const getTypeReferenceName = (typeReference: TypeReferenceNode) => {
     let qn: QualifiedName;
     try {
@@ -186,7 +138,6 @@ export function resolveControllerNames(indexSource?: SourceFile) {
   });
 }
 
-
 export function addBlankLineForNodes(parentNode: Node) {
   const nodes = parentNode.forEachChildAsArray();
 
@@ -195,13 +146,11 @@ export function addBlankLineForNodes(parentNode: Node) {
   });
 }
 
-
 export function replaceExistStatements(
   oldStatements: TypeAliasDeclarationStructure[],
   existStatements: TypeAliasDeclarationStructure[],
 ): void {
-
-  let oldIndex = 0
+  let oldIndex = 0;
 
   for (let i = 0; i < existStatements.length; i++) {
     const oldStatementIndex = findIndex(
@@ -245,14 +194,3 @@ export function mergeStatementBy<T = any>(
     return o;
   }
 }
-
-
-// const controllerProject = new Project().addSourceFileAtPath('./UserAccount.ts');
-// const typeProject = new Project().addSourceFileAtPath('./typings.d.ts');
-
-// const a = getTypesFromDeclare(typeProject);
-// const b = getTypesFormController(controllerProject);
-// const c = getControllerTypesDep(controllerProject, typeProject);
-
-// const v = resolveControllerNames(new Project().addSourceFileAtPath('./iii.ts'));
-// console.log(v);
