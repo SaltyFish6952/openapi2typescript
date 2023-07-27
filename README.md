@@ -1,7 +1,7 @@
 ## 介绍
-[![GitHub Repo stars](https://img.shields.io/github/stars/chenshuai2144/openapi2typescript?style=social)](https://github.com/chenshuai2144/openapi2typescript)
+[![GitHub Repo stars](https://img.shields.io/github/stars/SaltyFish6952/openapi2typescript-increment-enhance?style=social)](https://github.com/SaltyFish6952/openapi2typescript-increment-enhance)
 [![npm (scoped)](https://img.shields.io/npm/v/@umijs/openapi)](https://www.npmjs.com/package/@umijs/openapi)
-![GitHub tag (latest SemVer pre-release)](https://img.shields.io/github/v/tag/chenshuai2144/openapi2typescript?include_prereleases)
+![GitHub tag (latest SemVer pre-release)](https://img.shields.io/github/v/tag/SaltyFish6952/openapi2typescript-increment-enhance?include_prereleases)
 
 根据 [OpenApi3](https://swagger.io/blog/news/whats-new-in-openapi-3-0/) 文档生成 request 请求代码。
 
@@ -40,3 +40,5 @@ npm run openapi
 | enumStyle  | 否 | 枚举样式 | string-literal \| enum | string-literal |
 | nullable | 否 | 使用null代替可选 | boolean | false |
 | dataFields | 否 | response中数据字段 | string[] | - |
+| incrementControllers | 否 | 增量追加的controller名字 | string[] | - |
+| incrementMode | 否 | 当incrementControllers有值时启用，<br> sort: 追加controller和types后根据命名重新排序；<br>insert: 根据存在的controller和types顺序进行追加； | sort \| insert | insert |
