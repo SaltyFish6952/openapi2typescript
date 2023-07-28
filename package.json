@@ -1,10 +1,10 @@
 {
-  "name": "@umijs/openapi",
-  "version": "1.8.5",
+  "name": "@salty6952/openapi",
+  "version": "1.8.4",
   "description": "",
   "repository": {
     "type": "git",
-    "url": "git+git@github.com:chenshuai2144/openapi2typescript.git"
+    "url": "git+git@github.com:SaltyFish6952/openapi2typescript-increment-enhance.git"
   },
   "license": "MIT",
   "author": "chenshuai2144",
