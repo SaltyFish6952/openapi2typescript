@@ -88,14 +88,18 @@ export class IncrementGenerator {
     );
 
     // 交集中，依赖的type
-    const intersectionDependStatements = intersectionStatements.filter((x) =>
-      this.dependTypes.includes(x.name),
+    const intersectionDependStatementNames = intersectionStatements
+      .filter((x) => this.dependTypes.includes(x.name))
+      .map((x) => x.name);
+
+    const newIntersectionDependStatements = newStatements.filter((x) =>
+      intersectionDependStatementNames.includes(x.name),
     );
 
     // 新，去除交集，且为依赖
     const newDependWithoutIntersectionStatements = pullAllWith(
       cloneDeep(newStatements),
-      intersectionDependStatements,
+      newIntersectionDependStatements,
       (a, b) => a.name === b.name,
     ).filter((x) => this.dependTypes.includes(x.name));
 
@@ -111,19 +115,21 @@ export class IncrementGenerator {
 
     let statements: TypeAliasDeclarationStructure[] = [];
 
-    Log(
-      `⚠ 可能修改的type：${intersectionDependStatements.reduce(
-        (pre, cur) => pre + ` ${cur.name}`,
-        '',
-      )}`,
-    );
+    newIntersectionDependStatements.length &&
+      Log(
+        `⚠ 可能修改的type：${newIntersectionDependStatements.reduce(
+          (pre, cur) => pre + ` ${cur.name}`,
+          '',
+        )}`,
+      );
 
-    Log(
-      `⚠ 新增的type：${newDependWithoutIntersectionStatements.reduce(
-        (pre, cur) => pre + ` ${cur.name}`,
-        '',
-      )}`,
-    );
+    newDependWithoutIntersectionStatements.length &&
+      Log(
+        `⚠ 新增的type：${newDependWithoutIntersectionStatements.reduce(
+          (pre, cur) => pre + ` ${cur.name}`,
+          '',
+        )}`,
+      );
 
     // TODO sort insert or find insert
     if (this.incrementMode === 'insert') {
@@ -134,7 +140,18 @@ export class IncrementGenerator {
         statements = [...oldStatements];
 
         // // replace exist statements
-        replaceExistStatements(statements, intersectionDependStatements);
+        const replacedStatements = replaceExistStatements(
+          statements,
+          newIntersectionDependStatements,
+        );
+
+        replacedStatements.length &&
+          Log(
+            `⚠ 替换内容的type：${replacedStatements.reduce(
+              (pre, cur) => pre + ` ${cur.name}`,
+              '',
+            )}`,
+          );
 
         statements = mergeStatementBy<TypeAliasDeclarationStructure>(
           statements,

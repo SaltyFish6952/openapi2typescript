@@ -149,8 +149,10 @@ export function addBlankLineForNodes(parentNode: Node) {
 export function replaceExistStatements(
   oldStatements: TypeAliasDeclarationStructure[],
   existStatements: TypeAliasDeclarationStructure[],
-): void {
+): TypeAliasDeclarationStructure[] {
   let oldIndex = 0;
+
+  const replacedStatements: TypeAliasDeclarationStructure[] = [];
 
   for (let i = 0; i < existStatements.length; i++) {
     const oldStatementIndex = findIndex(
@@ -159,10 +161,16 @@ export function replaceExistStatements(
       oldIndex,
     );
 
-    oldStatements[oldStatementIndex].type = existStatements[i].type;
+    if (oldStatements[oldStatementIndex].type !== existStatements[i].type) {
+      oldStatements[oldStatementIndex].type = existStatements[i].type;
+
+      replacedStatements.push({ ...existStatements[i] });
+    }
 
     oldIndex = oldStatementIndex;
   }
+
+  return replacedStatements;
 }
 
 export function mergeStatementBy<T = any>(
