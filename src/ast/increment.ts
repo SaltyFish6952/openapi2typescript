@@ -117,7 +117,7 @@ export class IncrementGenerator {
 
     newIntersectionDependStatements.length &&
       Log(
-        `⚠ 可能修改的type：${newIntersectionDependStatements.reduce(
+        `🔧 可能修改的type：${newIntersectionDependStatements.reduce(
           (pre, cur) => pre + ` ${cur.name}`,
           '',
         )}`,
@@ -125,7 +125,7 @@ export class IncrementGenerator {
 
     newDependWithoutIntersectionStatements.length &&
       Log(
-        `⚠ 新增的type：${newDependWithoutIntersectionStatements.reduce(
+        `🔜 新增的type：${newDependWithoutIntersectionStatements.reduce(
           (pre, cur) => pre + ` ${cur.name}`,
           '',
         )}`,
@@ -147,7 +147,7 @@ export class IncrementGenerator {
 
         replacedStatements.length &&
           Log(
-            `⚠ 替换内容的type：${replacedStatements.reduce(
+            `🔄 替换内容的type：${replacedStatements.reduce(
               (pre, cur) => pre + ` ${cur.name}`,
               '',
             )}`,
