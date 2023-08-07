@@ -150,7 +150,6 @@ export function replaceExistStatements(
   oldStatements: TypeAliasDeclarationStructure[],
   existStatements: TypeAliasDeclarationStructure[],
 ): TypeAliasDeclarationStructure[] {
-  let oldIndex = 0;
 
   const replacedStatements: TypeAliasDeclarationStructure[] = [];
 
@@ -158,16 +157,17 @@ export function replaceExistStatements(
     const oldStatementIndex = findIndex(
       oldStatements,
       (item) => item.name === existStatements[i].name,
-      oldIndex,
     );
 
-    if (oldStatements[oldStatementIndex].type !== existStatements[i].type) {
+    if (
+      (oldStatements[oldStatementIndex].type as string).replace(/[ ]|[\r\n]|[\n]|[;]/g, '') !==
+      (existStatements[i].type as string).replace(/[ ]|[']|[\r\n]|[\n]|[;]/g, '')
+    ) {
       oldStatements[oldStatementIndex].type = existStatements[i].type;
 
       replacedStatements.push({ ...existStatements[i] });
     }
 
-    oldIndex = oldStatementIndex;
   }
 
   return replacedStatements;

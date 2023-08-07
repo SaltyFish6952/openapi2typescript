@@ -240,25 +240,19 @@ export class IncrementGenerator {
     const oldControllerNames = oldControllers.map((x) => x.fileName);
     const newControllerNames = newControllers.map((x) => x.fileName) ?? [];
 
-    const oldWithoutNewControllerNames = xor(
-      oldControllerNames, // [1,2]
-      newControllerNames, // [2,3]
-    ).filter((x) => !newControllerNames.includes(x)); // [1]
-
-    const oldWithoutNewControllers = oldWithoutNewControllerNames.map((name) => ({
-      fileName: name,
-      controllerName: name,
-    }));
-
     // TODO sort insert or find insert
 
     if (this.incrementMode === 'insert') {
+      const newWithoutOldControllers = newControllers.filter((x) =>
+        oldControllerNames.includes(x.fileName),
+      );
+
       const controllers = mergeStatementBy<{
         fileName: string;
         controllerName: string;
       }>(
         oldControllers,
-        newControllers,
+        newWithoutOldControllers,
         (preOldController, curOldController, newController) =>
           newController.fileName.localeCompare(curOldController?.fileName) < 0 &&
           newController.fileName.localeCompare(preOldController?.fileName ?? '') > 0,
@@ -276,6 +270,16 @@ export class IncrementGenerator {
 
       // return diffControllers;
     } else {
+      const oldWithoutNewControllerNames = xor(
+        oldControllerNames, // [1,2]
+        newControllerNames, // [2,3]
+      ).filter((x) => !newControllerNames.includes(x)); // [1]
+
+      const oldWithoutNewControllers = oldWithoutNewControllerNames.map((name) => ({
+        fileName: name,
+        controllerName: name,
+      }));
+
       return newControllers
         .concat(oldWithoutNewControllers)
         .sort((a, b) => a.fileName.localeCompare(b.fileName));
