@@ -244,7 +244,7 @@ export class IncrementGenerator {
 
     if (this.incrementMode === 'insert') {
       const newWithoutOldControllers = newControllers.filter((x) =>
-        oldControllerNames.includes(x.fileName),
+        !oldControllerNames.includes(x.fileName),
       );
 
       const controllers = mergeStatementBy<{
